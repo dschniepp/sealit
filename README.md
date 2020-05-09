@@ -112,9 +112,23 @@ The crypto part as well as the sealing principles are from _Sealed Secrets_.
 
 ## Development
 
+For development `git`, >= `go1.14`, `make`, access to a K8s cluster and `Helm` is required.
+
+Clone the repository via `git clone https://github.com/dschniepp/sealit.git` to continue with one of the following steps.
+
+### Run sealit
+
+`make run`
+
 ### Run tests
 
+`make test`
+
 ### Build application
+
+Locally the application can be build via `make build` and will populate the binary to the `dist` folder.
+
+Releases on GitHub are build and published via _goreleaser_ and a _GitHub Actions_.
 
 ## Contribute
 
