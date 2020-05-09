@@ -3,7 +3,7 @@
 > __Heads Ups__ sealit is still in development and some features are missing.
 
 `sealit` is a CLI which provides an opinionated way of doing GitOps based on Bitnami's _"Sealed Secrets" for Kubernetes_ and _Helm Charts_.
-The [`example`](example) demonstrates how everything plays together.
+The [`example`](example) folder demonstrates how everything plays together.
 
 ## Getting started
 
