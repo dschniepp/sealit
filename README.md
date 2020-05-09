@@ -1,16 +1,20 @@
 # sealit
 
-> __Heads Ups__ sealit is still in development and some features are missing.
+> __Heads Ups__ __sealit__ is still in development and some features are missing.
 
-`sealit` is a CLI which provides an opinionated way of doing GitOps based on Bitnami's _"Sealed Secrets" for Kubernetes_ and _Helm Charts_.
-The [`example`](example) folder demonstrates how everything plays together.
+__sealit__ is a CLI which provides an opinionated way of doing GitOps based on Bitnami's _"Sealed Secrets" for Kubernetes_ and _Helm Charts_.
 
 ## Getting started
 
-1. Download or clone `sealit` from github and build the application
+1. Download the latest release from https://github.com/dschniepp/sealit/releases.
 2. Install sealed secrets via `helm` on your K8s cluster https://github.com/helm/charts/tree/master/stable/sealed-secrets
-    `helm upgrade -i --namespace kube-system sealit stable/sealed-secrets`
-3. Run `sealit init` next to your environment specific values.yaml of your helm chart.
+3. Run `sealit init` next to your environment specific values.yaml of your helm chart
+4. Change the configuration file `.sealit.yaml` according to your needs
+5. Run `sealit seal` to encrypt all secrets. Review if your secrets are encrypted otherwise tweak your config file again.
+6. Create a `SealedSecret` resource inside your Helm Chart and reference the secrets from the `values.yaml` similar to `{{ .Values.env.your_secret | trimPrefix "ENC:" }}`
+7. Now you can securely commit your secrets and deploy your application based on git to Kubernetes
+
+In the [`example`](example) folder you can find a working solution and structure for using _sealit_, _Sealed Secrets_ and _Helm Charts_.
 
 ## Commands
 
@@ -106,8 +110,8 @@ Create a `pre-commit` hook in git which runs `sealit verify`.
 
 ## Limitations and scope
 
-`sealit` is an alternative cli to `kubeseal` with is part of Bitnami's [_Sealed Secrets_](https://github.com/bitnami-labs/sealed-secrets).
-Therefore `sealit` requires the _Sealed Secret_ controller already installed on the cluster, this can be done via the [helm chart](https://github.com/helm/charts/tree/master/stable/sealed-secrets).
+`sealit` is an alternative cli to `kubeseal` which is part of Bitnami's [_Sealed Secrets_](https://github.com/bitnami-labs/sealed-secrets).
+Therefore __sealit__ requires the _Sealed Secret_ controller already installed on the cluster, this can be done via the [helm chart](https://github.com/helm/charts/tree/master/stable/sealed-secrets).
 The crypto part as well as the sealing principles are from _Sealed Secrets_.
 
 ## Development
@@ -132,7 +136,7 @@ Releases on GitHub are build and published via _goreleaser_ and a _GitHub Action
 
 ## Contribute
 
-Thank you for considering contributing to the sealit! Before contributing, please be sure to read the [Contribution Guide](CONTRIBUTING.md).
+Thank you for considering contributing to the __sealit__! Before contributing, please be sure to read the [Contribution Guide](CONTRIBUTING.md).
 
 ## Code of Conduct
 
@@ -140,13 +144,13 @@ In order to ensure that the community is welcoming to all, please review and abi
 
 ## Security
 
-If you discover a vulnerabilities within sealit, please send an e-mail to Daniel Schniepp via [d.schniepp@indale.com](mailto:d.schniepp@indale.com)
+If you discover a vulnerabilities within __sealit__, please send an e-mail to Daniel Schniepp via [d.schniepp@indale.com](mailto:d.schniepp@indale.com)
 
 ## Credits
 
 Thanks to the awesome work of the people behind [SOPS](https://github.com/mozilla/sops) and [_Sealed Secrets_](https://github.com/bitnami-labs/sealed-secrets). 
-`sealit` is heavily influenced by there ideas.
+__sealit__ is heavily influenced by there ideas.
 
 ## License
 
-`sealit` is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+__sealit__ is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
