@@ -38,3 +38,6 @@ changelog:
     - '^test:'
     - Merge pull request
     - Merge branch
+signs:
+  - artifacts: checksum
+    args: ["--batch", "-u", "2FE7574CD1B1E582", "--output", "${signature}", "--detach-sign", "${artifact}"]
