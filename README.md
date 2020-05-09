@@ -2,8 +2,7 @@
 
 > __Heads Ups__ sealit is still in development and some features are missing.
 
-Opinionated CLI for Bitnami's `"Sealed Secrets" for Kubernetes`.
-`sealit` is used for GitOps based on _Sealed Secrets_ and _Helm_.
+`sealit` is a CLI which provides an opinionated way of doing GitOps based on Bitnami's _"Sealed Secrets" for Kubernetes_ and _Helm Charts_.
 The [`example`](example) demonstrates how everything plays together.
 
 ## Getting started
