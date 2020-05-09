@@ -1,3 +1,5 @@
+.PHONY: test build install run
+
 test:
 	go test -v ./...
 
