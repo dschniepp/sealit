@@ -110,6 +110,14 @@ Create a `pre-commit` hook in git which runs `sealit verify`.
 Therefore `sealit` requires the _Sealed Secret_ controller already installed on the cluster, this can be done via the [helm chart](https://github.com/helm/charts/tree/master/stable/sealed-secrets).
 The crypto part as well as the sealing principles are from _Sealed Secrets_.
 
+## Development
+
+### Run tests
+
+### Build application
+
+## Contribute
+
 ## Credits
 
 Thanks to the awesome work of the people behind [SOPS](https://github.com/mozilla/sops) and [_Sealed Secrets_](https://github.com/bitnami-labs/sealed-secrets). 
