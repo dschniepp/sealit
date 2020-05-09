@@ -9,13 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CHANGELOG.md
 - CONTRIBUTING.md
 - CODE_OF_CONDUCT.md
+- `template` command for creating a SealedSecret K8s resource
 ### Changed
 - README.md
 - make build will populate the binary to `dist` instead of `bin`
 
 ## [0.1.0-alpha.2] - 2020-05-06
 ### Added
-- Added `init`, `seal` and `verify` commands
+- `init`, `seal` and `verify` commands
 
 [Unreleased]: https://github.com/dschniepp/sealit/compare/v0.1.0-alpha.2...HEAD
 [0.1.0-alpha.2]: https://github.com/dschniepp/sealit/releases/tag/v0.1.0-alpha.2

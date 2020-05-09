@@ -54,6 +54,21 @@ func main() {
 					return sealit.Verify()
 				},
 			},
+			{
+				Name:    "template",
+				Aliases: []string{"t"},
+				Usage:   "create a sealed secrets template",
+				Action: func(c *cli.Context) error {
+					return internal.Template(c.String("file"))
+				},
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "file",
+						Value: "",
+						Usage: "file path for template",
+					},
+				},
+			},
 		},
 		Flags: []cli.Flag{
 			&cli.StringFlag{

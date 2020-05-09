@@ -30,6 +30,10 @@ In the [`example`](example) folder you can find a working solution and structure
 
 `sealit seal` seals all files according to the rules defined in the `.sealit.yaml`.
 
+### `sealit template`
+
+`sealit template` echos a SealedSecret Kubernetes resource, with parameter `file` the output will be saved at the referenced location.
+
 ### `sealit verify`
 
 `sealit seal` verifies of all secrets in the respective files are sealed according to the rules defined in the `.sealit.yaml`.
