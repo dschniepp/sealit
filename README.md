@@ -132,6 +132,16 @@ Releases on GitHub are build and published via _goreleaser_ and a _GitHub Action
 
 ## Contribute
 
+Thank you for considering contributing to the sealit! Before contributing, please be sure to read the [Contribution Guide](CONTRIBUTING.md).
+
+## Code of Conduct
+
+In order to ensure that the community is welcoming to all, please review and abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Security
+
+If you discover a vulnerabilities within sealit, please send an e-mail to Daniel Schniepp via [d.schniepp@indale.com](mailto:d.schniepp@indale.com)
+
 ## Credits
 
 Thanks to the awesome work of the people behind [SOPS](https://github.com/mozilla/sops) and [_Sealed Secrets_](https://github.com/bitnami-labs/sealed-secrets). 
