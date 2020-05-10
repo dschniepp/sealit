@@ -21,7 +21,7 @@ func ExampleConfig() Config {
 
 	return Config{
 		SealingRuleSets: []SealingRuleSet{
-			SealingRuleSet{
+			{
 				FileRegex:    "\\.dev\\.yaml$",
 				Name:         "secret",
 				Namespace:    "default",

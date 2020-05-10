@@ -11,8 +11,8 @@ __sealit__ is a CLI which provides an opinionated way of doing GitOps based on B
 3. Run `sealit init` next to your environment specific values.yaml of your helm chart
 4. Change the configuration file `.sealit.yaml` according to your needs
 5. Run `sealit seal` to encrypt all secrets. Review if your secrets are encrypted otherwise tweak your config file again.
-6. Create a `SealedSecret` resource inside your Helm Chart and reference the secrets from the `values.yaml` similar to `{{ .Values.env.your_secret | trimPrefix "ENC:" }}`
-7. Now you can securely commit your secrets and deploy your application based on git to Kubernetes
+6. Create a `SealedSecret` resource (`sealit template`) inside your Helm Chart and reference the secrets from the `values.yaml` similar to `{{ .Values.env.your_secret | trimPrefix "ENC:" }}`
+7. Now you can securely commit your secrets and deploy your application based on your git repository, to Kubernetes
 
 In the [`example`](example) folder you can find a working solution and structure for using _sealit_, _Sealed Secrets_ and _Helm Charts_.
 
@@ -152,7 +152,7 @@ If you discover a vulnerabilities within __sealit__, please send an e-mail to Da
 
 ## Credits
 
-Thanks to the awesome work of the people behind [SOPS](https://github.com/mozilla/sops) and [_Sealed Secrets_](https://github.com/bitnami-labs/sealed-secrets). 
+Thanks to the awesome work of the people behind [_SOPS_](https://github.com/mozilla/sops) and [_Sealed Secrets_](https://github.com/bitnami-labs/sealed-secrets). 
 __sealit__ is heavily influenced by there ideas.
 
 ## License
