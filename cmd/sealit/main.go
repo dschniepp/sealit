@@ -3,23 +3,28 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/dschniepp/sealit/internal"
 
+	"github.com/hashicorp/logutils"
 	"github.com/urfave/cli/v2"
 )
 
 func main() {
 	app := &cli.App{
-		Name:  "sealit",
-		Usage: "alternative cli for sealed secrets",
+		Name:     "sealit",
+		Version:  "v0.2.0",
+		Compiled: time.Now(),
+		Usage:    "alternative cli for sealed secrets",
 		Commands: []*cli.Command{
 			{
 				Name:    "init",
 				Aliases: []string{"i"},
 				Usage:   "create a config file in the current dir",
-				Action: func(c *cli.Context) error {
-					return internal.Init(c.String("config"), c.Bool("force"))
+				Action: func(c *cli.Context) (err error) {
+					err = internal.Init(c.String("config"), c.Bool("force"))
+					return err
 				},
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
@@ -33,9 +38,10 @@ func main() {
 				Name:    "seal",
 				Aliases: []string{"s"},
 				Usage:   "seal all secrets",
-				Action: func(c *cli.Context) error {
-					sealit := internal.New(c.String("config"), c.String("kubeconfig"))
-					return sealit.Seal(c.Bool("force"))
+				Action: func(c *cli.Context) (err error) {
+					sealit, err := internal.New(c.String("config"), c.String("kubeconfig"))
+					err = sealit.Seal(c.Bool("force"))
+					return err
 				},
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
@@ -49,17 +55,19 @@ func main() {
 				Name:    "verify",
 				Aliases: []string{"v"},
 				Usage:   "verify if all secrets are encrypted",
-				Action: func(c *cli.Context) error {
-					sealit := internal.New(c.String("config"), c.String("kubeconfig"))
-					return sealit.Verify()
+				Action: func(c *cli.Context) (err error) {
+					sealit, err := internal.New(c.String("config"), c.String("kubeconfig"))
+					err = sealit.Verify()
+					return err
 				},
 			},
 			{
 				Name:    "template",
 				Aliases: []string{"t"},
 				Usage:   "create a sealed secrets template",
-				Action: func(c *cli.Context) error {
-					return internal.Template(c.String("file"))
+				Action: func(c *cli.Context) (err error) {
+					err = internal.Template(c.String("file"))
+					return err
 				},
 				Flags: []cli.Flag{
 					&cli.StringFlag{
@@ -80,6 +88,26 @@ func main() {
 				Name:  "kubeconfig",
 				Usage: "path to the kubeconfig file",
 			},
+			&cli.BoolFlag{
+				Name:  "debug",
+				Value: false,
+				Usage: "enable verbose output",
+			},
+		},
+		Before: func(c *cli.Context) (err error) {
+			filter := &logutils.LevelFilter{
+				Levels:   []logutils.LogLevel{"DEBUG", "WARN", "ERROR"},
+				MinLevel: logutils.LogLevel("WARN"),
+				Writer:   os.Stderr,
+			}
+
+			if c.Bool("debug") {
+				filter.MinLevel = "DEBUG"
+			}
+
+			log.SetOutput(filter)
+
+			return err
 		},
 	}
 

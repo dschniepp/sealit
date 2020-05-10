@@ -1,9 +1,11 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -41,32 +43,31 @@ type SealedSecretController struct {
 // 1. fetch from cluster
 // 2. fetch from url
 // 3. fetch from file system
-func (s *SealingRuleSet) GetRecentCert() []byte {
+func (s *SealingRuleSet) GetRecentCert() (cert []byte, err error) {
 	if (s.CertSource.Controller != SealedSecretController{}) {
-		fmt.Println("Fetch from K8s controller")
-		r, _ := openCertFromCluster(s.CertSource.Controller)
-		key, _ := ioutil.ReadAll(r)
-		return key
+		r, err := openCertFromCluster(s.CertSource.Controller)
+		cert, err = ioutil.ReadAll(r)
+		return cert, err
 	} else if s.CertSource.Url != "" {
-		fmt.Println("Fetch from server")
-		r, _ := openRemoteCert(s.CertSource.Url)
-		key, _ := ioutil.ReadAll(r)
-		return key
+		r, err := openRemoteCert(s.CertSource.Url)
+		cert, err := ioutil.ReadAll(r)
+		return cert, err
 	} else if s.CertSource.Path != "" {
-		fmt.Println("Fetch from file system")
-		r, _ := openLocalCert(s.CertSource.Path)
-		key, _ := ioutil.ReadAll(r)
-		return key
+		r, err := openLocalCert(s.CertSource.Path)
+		cert, err := ioutil.ReadAll(r)
+		return cert, err
 	}
-
-	return nil
+	err = errors.New("no cert provider like `path`, `url`, or `controller` was specified")
+	return cert, err
 }
 
 func openLocalCert(filename string) (io.ReadCloser, error) {
+	log.Print("[DEBUG] Fetch from file system")
 	return os.Open(filename)
 }
 
 func openRemoteCert(uri string) (io.ReadCloser, error) {
+	log.Print("[DEBUG] Fetch from url")
 	resp, err := http.Get(uri)
 	if err != nil {
 		return nil, err
@@ -78,6 +79,7 @@ func openRemoteCert(uri string) (io.ReadCloser, error) {
 }
 
 func openCertFromCluster(controller SealedSecretController) (io.ReadCloser, error) {
+	log.Print("[DEBUG] Fetch from within K8s sealed secret controller")
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
 	if kubeConfig != "" {

@@ -8,7 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var untransformedData = []byte(`env:
+var untransformedDataImport = []byte(`env:
     username: john
     password: secret
 #asdasd
@@ -24,7 +24,28 @@ env2:
 env3: test
 `)
 
-var transformedData = []byte(`env:
+var untransformedDataExport = []byte(`env:
+    username: john
+    password: secret
+#asdasd
+env2:
+    filters_password:
+      - test4
+      - test3
+      - model: test
+    password: secret
+    pin: 1234
+    threads: 1
+    alpha: test!
+env3: test
+sealit:
+    name: ""
+    namespace: ""
+    sealedAt: ""
+    cert: ""
+`)
+
+var transformedDataExport = []byte(`env:
     username: ENC:john
     password: ENC:secret
 #asdasd
@@ -38,6 +59,11 @@ env2:
     threads: ENC:1
     alpha: ENC:test!
 env3: ENC:test
+sealit:
+    name: ""
+    namespace: ""
+    sealedAt: ""
+    cert: ""
 `)
 
 var transformedDataWithSealit = []byte(`env:
@@ -80,79 +106,91 @@ sealit:
 `)
 
 func TestImportExport(t *testing.T) {
-	f := NewValueFile(untransformedData)
+	f, _ := NewValueFile(untransformedDataImport)
 
-	d := f.Export()
+	d, _ := f.Export()
 
-	if !reflect.DeepEqual(d, untransformedData) {
-		t.Errorf("Sealed yaml was incorrect, got: \n%s\n, want: \n%s\n.", d, untransformedData)
+	if !reflect.DeepEqual(d, untransformedDataExport) {
+		t.Errorf("Sealed yaml was incorrect, got: \n%s\n, want: \n%s\n.", d, untransformedDataExport)
 	}
 }
 
 func TestTransformingOfValues(t *testing.T) {
-	f := NewValueFile(untransformedData)
+	f, _ := NewValueFile(untransformedDataImport)
 
-	f.ApplyFuncToValues(func(key *yaml.Node, value *yaml.Node) {
+	f.ApplyFuncToValues(func(key *yaml.Node, value *yaml.Node) error {
 		value.SetString(fmt.Sprintf("ENC:%s", value.Value))
+		return nil
 	})
 
-	d := f.Export()
+	d, _ := f.Export()
 
-	if !reflect.DeepEqual(d, transformedData) {
-		t.Errorf("Sealed yaml was incorrect, got: \n%s\n, want: \n%s\n.", d, transformedData)
+	if !reflect.DeepEqual(d, transformedDataExport) {
+		t.Errorf("Sealed yaml was incorrect, got: \n%s\n, want: \n%s\n.", d, transformedDataExport)
 	}
 }
 
-func TestUpdateMetaOnNewFile(t *testing.T) {
-	// f := NewValueFile(tr{})
+func TestImportExportOfTransformedFile(t *testing.T) {
+	f, _ := NewValueFile(transformedDataExport)
 
-	// f.UpdateMetadata(&Metadata{
-	// 	Name: "Daniel",
-	// })
+	d, _ := f.Export()
 
-	// ex := f.Export()
-
-	// ioutil.WriteFile("test.yaml", ex, 0644)
-
-	//t.Logf("%v")
-	// if !reflect.DeepEqual(d, transformedData) {
-	// 	t.Errorf("Sealed yaml was incorrect, got: \n%s\n, want: \n%s\n.", d, transformedData)
-	// }
+	if !reflect.DeepEqual(d, transformedDataExport) {
+		t.Errorf("Sealed yaml was incorrect, got: \n%s\n, want: \n%s\n.", d, transformedDataExport)
+	}
 }
 
-func TestUpdateMeta(t *testing.T) {
-	// f := NewValueFile(transformedDataWithSealit)
+func TestLoadSealitData(t *testing.T) {
+	f, _ := NewValueFile(transformedDataWithSealit)
 
-	// f.UpdateMetadata(&Metadata{
-	// 	Name: "Daniel",
-	// })
+	if f.Metadata.Name != "mysecret" {
+		t.Errorf("Name was incorrect, got: \n%s\n, want: \n%s\n.", f.Metadata.Name, "mysecret")
+	}
 
-	// ex := f.Export()
+	if f.Metadata.Namespace != "default" {
+		t.Errorf("Namespace was incorrect, got: \n%s\n, want: \n%s\n.", f.Metadata.Namespace, "default")
+	}
 
-	// ioutil.WriteFile("test.yaml", ex, 0644)
+	if f.Metadata.SealedAt != "2020-05-03T23:37:44+02:00" {
+		t.Errorf("SealedAt date was incorrect, got: \n%s\n, want: \n%s\n.", f.Metadata.SealedAt, "2020-05-03T23:37:44+02:00")
+	}
 
-	//t.Logf("%v")
-	// if !reflect.DeepEqual(d, transformedData) {
-	// 	t.Errorf("Sealed yaml was incorrect, got: \n%s\n, want: \n%s\n.", d, transformedData)
-	// }
+	if f.Metadata.Cert == "" {
+		t.Error("Cert was not set.")
+	}
 }
 
-// func TestLoadSealitData(t *testing.T) {
-// 	f := NewValueFile(transformedDataWithSealit)
+func TestGetLabelForNamespaceAndName(t *testing.T) {
+	m := &Metadata{
+		Name:      "secret",
+		Namespace: "default",
+	}
 
-// 	if f.Sealit.Name != "mysecret" {
-// 		t.Errorf("Name was incorrect, got: \n%s\n, want: \n%s\n.", f.Sealit.Name, "mysecret")
-// 	}
+	l := m.getLabel()
 
-// 	if f.Sealit.Namespace != "default" {
-// 		t.Errorf("Namespace was incorrect, got: \n%s\n, want: \n%s\n.", f.Sealit.Namespace, "default")
-// 	}
+	if !reflect.DeepEqual(l, []byte("default/secret")) {
+		t.Errorf("Label was incorrect, got: %s, want: %s.", l, "default/secret")
+	}
+}
 
-// 	if f.Sealit.SealedAt != "2020-05-03T23:37:44+02:00" {
-// 		t.Errorf("SealedAt date was incorrect, got: \n%s\n, want: \n%s\n.", f.Sealit.SealedAt, "2020-05-03T23:37:44+02:00")
-// 	}
+func TestGetLabelForNamespaceOnly(t *testing.T) {
+	m := &Metadata{
+		Namespace: "default",
+	}
 
-// 	if !reflect.DeepEqual(f.Sealit.Cert, []byte("")) {
-// 		t.Error("Cert was not set.")
-// 	}
-// }
+	l := m.getLabel()
+
+	if !reflect.DeepEqual(l, []byte("default")) {
+		t.Errorf("Label was incorrect, got: %s, want: %s.", l, "default")
+	}
+}
+
+func TestGetLabelForUndefinedNameAndNamespace(t *testing.T) {
+	m := &Metadata{}
+
+	l := m.getLabel()
+
+	if !reflect.DeepEqual(l, []byte("")) {
+		t.Errorf("Label was incorrect, got: %s, want: %s.", l, "")
+	}
+}
