@@ -38,15 +38,22 @@ spec:
 
 type Sealit struct {
 	config *Config
+	debug  bool
 }
 
 func Init(sealitconfig string, force bool) (err error) {
 	if file, err := os.Stat(sealitconfig); file != nil && !force {
-		log.Fatalf("config file %s already exists", sealitconfig)
+		return fmt.Errorf("config file %v exists already", file.Name())
+	} else if err != nil {
 		return err
 	}
 
-	d, err := yaml.Marshal(ExampleConfig())
+	exampleConfig := ExampleConfig()
+
+	d, err := yaml.Marshal(exampleConfig)
+	if err != nil {
+		return err
+	}
 
 	if err := ioutil.WriteFile(sealitconfig, d, 0644); err != nil {
 		return err
@@ -59,75 +66,90 @@ func Template(sealedSecretPath string) (err error) {
 	if sealedSecretPath == "" {
 		fmt.Printf("%s", template)
 		return nil
-	} else {
-		return ioutil.WriteFile(sealedSecretPath, template, os.ModePerm)
 	}
+
+	return ioutil.WriteFile(sealedSecretPath, template, 0644)
 }
 
-func New(sealitconfig string, kubeconfig string) *Sealit {
+func New(sealitconfig string, kubeconfig string) (*Sealit, error) {
+	log.Printf("[DEBUG] Load config file %s", sealitconfig)
 	configFile, err := ioutil.ReadFile(sealitconfig)
 
 	if err != nil {
-		fmt.Printf("Error: %s\n", err)
+		fmt.Printf("[ERROR] %v\n", err)
 	}
 
-	config, _ := LoadConfig(configFile, kubeconfig)
+	config, err := LoadConfig(configFile, kubeconfig)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return &Sealit{
 		config: &config,
-	}
+	}, nil
 }
 
 func (s *Sealit) Seal(force bool) (err error) {
-	files, err := ioutil.ReadDir(".")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, f := range files {
-		if !f.IsDir() {
-			for _, srs := range s.config.SealingRuleSets {
-				fileNamePattern := regexp.MustCompile(srs.FileRegex)
-				if fileNamePattern.MatchString(f.Name()) {
-					data, _ := ioutil.ReadFile(f.Name())
-					vf := NewValueFile(data)
-					sealer := NewSealer(&srs, vf.Sealit)
-					vf.ApplyFuncToValues(sealer.seal)
-					metaData := sealer.Export()
-					vf.updateMetadata(metaData)
-					data = vf.Export()
-					ioutil.WriteFile(f.Name(), data, 0644)
-				}
-			}
+	return s.applyToEveryMatchingFile(func(srs *SealingRuleSet, f os.FileInfo) (err error) {
+		data, err := ioutil.ReadFile(f.Name())
+		if err != nil {
+			return err
 		}
-	}
 
-	return nil
+		log.Printf("[DEBUG] Load values file %s", f.Name())
+		vf, err := NewValueFile(data)
+		if err != nil {
+			return err
+		}
+
+		log.Print("[DEBUG] Load sealer based on config and values file")
+		sealer, err := NewSealer(srs, vf.Metadata)
+		if err != nil {
+			return err
+		}
+
+		log.Print("[DEBUG] Apply sealing function")
+		vf.ApplyFuncToValues(sealer.seal)
+		data, err = vf.Export()
+		if err != nil {
+			return err
+		}
+
+		return ioutil.WriteFile(f.Name(), data, 0644)
+	})
 }
 
 func (s *Sealit) Verify() (err error) {
+	return s.applyToEveryMatchingFile(func(srs *SealingRuleSet, f os.FileInfo) (err error) {
+		data, err := ioutil.ReadFile(f.Name())
+		log.Printf("[DEBUG] Load values file %s", f.Name())
+		vf, err := NewValueFile(data)
+		log.Print("[DEBUG] Load sealer based on config and values file")
+		sealer, err := NewSealer(srs, vf.Metadata)
+		log.Print("[DEBUG] Apply sealing function")
+		vf.ApplyFuncToValues(sealer.seal)
+		log.Print("[DEBUG] Check of sealing date was refreshed")
+		if vf.Metadata == nil || vf.Metadata.SealedAt != sealer.metadata.SealedAt {
+			err = fmt.Errorf("%s is not completely encrypted", f.Name())
+		}
+		return err
+	})
+}
+
+func (s *Sealit) applyToEveryMatchingFile(fun func(*SealingRuleSet, os.FileInfo) error) (err error) {
 	files, err := ioutil.ReadDir(".")
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	for _, f := range files {
 		if !f.IsDir() {
 			for _, srs := range s.config.SealingRuleSets {
 				fileNamePattern := regexp.MustCompile(srs.FileRegex)
 				if fileNamePattern.MatchString(f.Name()) {
-					data, _ := ioutil.ReadFile(f.Name())
-					vf := NewValueFile(data)
-					sealer := NewSealer(&srs, vf.Sealit)
-					vf.ApplyFuncToValues(sealer.seal)
-					metaData := sealer.Export()
-					if vf.Sealit == nil || vf.Sealit.SealedAt != metaData.SealedAt {
-						fmt.Printf("\nWarning: %s is not completely encrypted!\n", f.Name())
-					}
+					err = fun(&srs, f)
 				}
 			}
 		}
 	}
 
-	return nil
+	return err
 }

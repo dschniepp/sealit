@@ -3,7 +3,6 @@ package internal
 import (
 	"crypto/rsa"
 	"math/rand"
-	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -18,8 +17,9 @@ func TestSealSecrets(t *testing.T) {
 	key, _ := testGeneratePrivateKey()
 
 	s := Sealer{
-		Regexp:    regexp.MustCompile(`(password|pin)$`),
-		PublicKey: &key.PublicKey,
+		regexp:    regexp.MustCompile(`(password|pin)$`),
+		publicKey: &key.PublicKey,
+		metadata:  &Metadata{},
 	}
 
 	k := &yaml.Node{Value: "test_password"}
@@ -35,8 +35,9 @@ func TestSealingOfAlreadySealedSecrets(t *testing.T) {
 	key, _ := testGeneratePrivateKey()
 
 	s := Sealer{
-		Regexp:    regexp.MustCompile(`(password|pin)$`),
-		PublicKey: &key.PublicKey,
+		regexp:    regexp.MustCompile(`(password|pin)$`),
+		publicKey: &key.PublicKey,
+		metadata:  &Metadata{},
 	}
 
 	k := &yaml.Node{Value: "test_password"}
@@ -52,8 +53,9 @@ func TestSealNonSecrets(t *testing.T) {
 	key, _ := testGeneratePrivateKey()
 
 	s := Sealer{
-		Regexp:    regexp.MustCompile(`(password|pin)$`),
-		PublicKey: &key.PublicKey,
+		regexp:    regexp.MustCompile(`(password|pin)$`),
+		publicKey: &key.PublicKey,
+		metadata:  &Metadata{},
 	}
 
 	k := &yaml.Node{Value: "test"}
@@ -62,39 +64,5 @@ func TestSealNonSecrets(t *testing.T) {
 
 	if v.Value != "secret!" {
 		t.Errorf("Sealed yaml was incorrect, got: %s, want: %s.", v.Value, "secret!")
-	}
-}
-
-func TestGetLabelForNamespaceAndName(t *testing.T) {
-	s := Sealer{
-		Namespace: "default",
-		Name:      "secret",
-	}
-
-	l := s.getLabel()
-
-	if !reflect.DeepEqual(l, []byte("default/secret")) {
-		t.Errorf("Label was incorrect, got: %s, want: %s.", l, "default/secret")
-	}
-}
-
-func TestGetLabelForNamespaceOnly(t *testing.T) {
-	s := Sealer{
-		Namespace: "default",
-	}
-
-	l := s.getLabel()
-
-	if !reflect.DeepEqual(l, []byte("default")) {
-		t.Errorf("Label was incorrect, got: %s, want: %s.", l, "default")
-	}
-}
-
-func TestGetLabelForUndefinedNameAndNamespace(t *testing.T) {
-	s := Sealer{}
-	l := s.getLabel()
-
-	if !reflect.DeepEqual(l, []byte("")) {
-		t.Errorf("Label was incorrect, got: %s, want: %s.", l, "")
 	}
 }
