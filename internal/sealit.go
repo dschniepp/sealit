@@ -42,10 +42,8 @@ type Sealit struct {
 }
 
 func Init(sealitconfig string, force bool) (err error) {
-	if file, err := os.Stat(sealitconfig); file != nil && !force {
+	if file, _ := os.Stat(sealitconfig); file != nil && !force {
 		return fmt.Errorf("config file %v exists already", file.Name())
-	} else if err != nil {
-		return err
 	}
 
 	exampleConfig := ExampleConfig()
