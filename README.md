@@ -56,8 +56,8 @@ sealing_rules:
         path: cert.pem
         controller:
             context: KubeContextName
-            name: secret-controller
-            namespace: sealed-secret-namespace
+            name: sealed-secrets
+            namespace: kube-system
         maxAge: 720h0m0s
 ```
 
@@ -103,8 +103,8 @@ sealing_rules:
         ...
         controller:
             context: KubeContextName
-            name: secret-controller
-            namespace: sealed-secret-namespace
+            name: sealed-secrets
+            namespace: kube-system
         maxAge: 720h0m0s
 ```
 

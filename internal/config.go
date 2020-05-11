@@ -31,8 +31,8 @@ func ExampleConfig() Config {
 					Path: "cert.pem",
 					Controller: SealedSecretController{
 						Context:   "KubeContextName",
-						Name:      "secret-controller",
-						Namespace: "sealed-secret-namespace",
+						Name:      "sealed-secrets",
+						Namespace: "kube-system",
 					},
 					MaxAge: d,
 				},
