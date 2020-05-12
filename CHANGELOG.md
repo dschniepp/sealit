@@ -5,8 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Chnaged
-- Renamed cert source `controller` to `kubernetes`.
+### Added
+- Warning in case a secret value is an empty string or padded with whitespace
+### Changed
+- Renamed cert source `controller` to `kubernetes`
 
 ## [0.2.1] - 2020-05-11
 ### Changed

@@ -86,15 +86,21 @@ func (s *Sealer) seal(key *yaml.Node, value *yaml.Node) error {
 				return err
 			}
 
+			if value.Value == "" {
+				log.Printf("[WARNING] Value of `%s` is an empty string", key.Value)
+			} else if value.Value != strings.TrimSpace(value.Value) {
+				log.Printf("[WARNING] Value of `%s` is padded with whitespace", key.Value)
+			}
+
 			encodedSecret := base64.StdEncoding.EncodeToString(ciphertext)
 			value.SetString(fmt.Sprintf("ENC:%s", encodedSecret))
 			s.metadata.SealedAt = time.Now().Format(time.RFC3339)
 
-			log.Printf("[DEBUG] Encoded value of `%s`", key.Value)
+			log.Printf("[INFO] Encrypted value of `%s`", key.Value)
 
 			return nil
 		}
-		log.Printf("[DEBUG] Value of `%s` was already encoded", key.Value)
+		log.Printf("[DEBUG] Value of `%s` was already encrypted", key.Value)
 	}
 	log.Printf("[DEBUG] `%s` did not match regex %s", key.Value, s.regexp.String())
 
