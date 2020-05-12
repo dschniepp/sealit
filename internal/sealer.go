@@ -30,7 +30,7 @@ type Sealer struct {
 	metadata  *Metadata
 }
 
-func NewSealer(srs *SealingRuleSet, m *Metadata) (*Sealer, error) {
+func NewSealer(srs *SealingRuleSet, m *Metadata, fetchCert bool) (*Sealer, error) {
 	log.Printf("[DEBUG] Create sealer based on sealing rules %v and metadata %v", srs, m)
 	if *m == (Metadata{}) {
 		log.Printf("[DEBUG] File was never encoded before, init metadata block")
@@ -61,7 +61,7 @@ func NewSealer(srs *SealingRuleSet, m *Metadata) (*Sealer, error) {
 			return nil, err
 		}
 
-		if certStatus != validCert {
+		if certStatus != validCert || fetchCert {
 			cert, _ := srs.GetRecentCert()
 			m.Cert = string(cert)
 		}
@@ -105,6 +105,8 @@ func (s *Sealer) seal(key *yaml.Node, value *yaml.Node) error {
 			return nil
 		}
 		log.Printf("[DEBUG] Value of `%s` was already encrypted", key.Value)
+
+		return nil
 	}
 	log.Printf("[DEBUG] `%s` did not match regex %s", key.Value, s.regexp.String())
 

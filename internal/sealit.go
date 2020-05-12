@@ -37,8 +37,8 @@ spec:
 `)
 
 type Sealit struct {
-	config *Config
-	debug  bool
+	config    *Config
+	fetchCert bool
 }
 
 func Init(sealitconfig string, force bool) (err error) {
@@ -69,7 +69,7 @@ func Template(sealedSecretPath string) (err error) {
 	return ioutil.WriteFile(sealedSecretPath, template, 0644)
 }
 
-func New(sealitconfig string, kubeconfig string) (*Sealit, error) {
+func New(sealitconfig string, kubeconfig string, fetchCert bool) (*Sealit, error) {
 	log.Printf("[DEBUG] Load config file %s", sealitconfig)
 	configFile, err := ioutil.ReadFile(sealitconfig)
 
@@ -84,7 +84,8 @@ func New(sealitconfig string, kubeconfig string) (*Sealit, error) {
 	}
 
 	return &Sealit{
-		config: &config,
+		config:    &config,
+		fetchCert: fetchCert,
 	}, nil
 }
 
@@ -102,7 +103,7 @@ func (s *Sealit) Seal(force bool) (err error) {
 		}
 
 		log.Print("[DEBUG] Load sealer based on config and values file")
-		sealer, err := NewSealer(srs, vf.Metadata)
+		sealer, err := NewSealer(srs, vf.Metadata, s.fetchCert)
 		if err != nil {
 			return err
 		}
@@ -132,7 +133,7 @@ func (s *Sealit) Verify() (err error) {
 		}
 
 		log.Print("[DEBUG] Load sealer based on config and values file")
-		sealer, err := NewSealer(srs, vf.Metadata)
+		sealer, err := NewSealer(srs, vf.Metadata, s.fetchCert)
 		if err != nil {
 			return err
 		}

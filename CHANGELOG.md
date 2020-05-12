@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- `--fetch-cert` flag to `seal` and `verify` to enforce a cert load
 - Warning in case a secret value is an empty string or padded with whitespace
 ### Changed
 - Renamed cert source `controller` to `kubernetes`

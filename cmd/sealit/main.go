@@ -39,7 +39,7 @@ func main() {
 				Aliases: []string{"s"},
 				Usage:   "seal all secrets",
 				Action: func(c *cli.Context) (err error) {
-					sealit, err := internal.New(c.String("config"), c.String("kubeconfig"))
+					sealit, err := internal.New(c.String("config"), c.String("kubeconfig"), c.Bool("fetch-cert"))
 					err = sealit.Seal(c.Bool("force"))
 					return err
 				},
@@ -49,6 +49,11 @@ func main() {
 						Value: false,
 						Usage: "seal with old certificate",
 					},
+					&cli.BoolFlag{
+						Name:  "fetch-cert",
+						Value: false,
+						Usage: "fetch latest cert from source",
+					},
 				},
 			},
 			{
@@ -56,9 +61,16 @@ func main() {
 				Aliases: []string{"v"},
 				Usage:   "verify if all secrets are encrypted",
 				Action: func(c *cli.Context) (err error) {
-					sealit, err := internal.New(c.String("config"), c.String("kubeconfig"))
+					sealit, err := internal.New(c.String("config"), c.String("kubeconfig"), c.Bool("fetch-cert"))
 					err = sealit.Verify()
 					return err
+				},
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "fetch-cert",
+						Value: false,
+						Usage: "fetch latest cert from source",
+					},
 				},
 			},
 			{
