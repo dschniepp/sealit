@@ -38,7 +38,11 @@ func NewSealer(srs *SealingRuleSet, m *Metadata) (*Sealer, error) {
 		m.Name = srs.Name
 		m.Namespace = srs.Namespace
 
-		cert, _ := srs.GetRecentCert()
+		cert, err := srs.GetRecentCert()
+		if err != nil {
+			return nil, err
+		}
+
 		m.Cert = string(cert)
 	} else {
 		log.Printf("[DEBUG] File has encoded values and a meta block")

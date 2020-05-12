@@ -121,16 +121,29 @@ func (s *Sealit) Seal(force bool) (err error) {
 func (s *Sealit) Verify() (err error) {
 	return s.applyToEveryMatchingFile(func(srs *SealingRuleSet, f os.FileInfo) (err error) {
 		data, err := ioutil.ReadFile(f.Name())
+		if err != nil {
+			return err
+		}
+
 		log.Printf("[DEBUG] Load values file %s", f.Name())
 		vf, err := NewValueFile(data)
+		if err != nil {
+			return err
+		}
+
 		log.Print("[DEBUG] Load sealer based on config and values file")
 		sealer, err := NewSealer(srs, vf.Metadata)
+		if err != nil {
+			return err
+		}
+
 		log.Print("[DEBUG] Apply sealing function")
 		vf.ApplyFuncToValues(sealer.seal)
 		log.Print("[DEBUG] Check of sealing date was refreshed")
 		if vf.Metadata == nil || vf.Metadata.SealedAt != sealer.metadata.SealedAt {
-			err = fmt.Errorf("%s is not completely encrypted", f.Name())
+			return fmt.Errorf("%s is not completely encrypted", f.Name())
 		}
+
 		return err
 	})
 }

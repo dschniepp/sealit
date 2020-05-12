@@ -46,14 +46,23 @@ type KubernetesCertSource struct {
 func (s *SealingRuleSet) GetRecentCert() (cert []byte, err error) {
 	if (s.CertSource.Kubernetes != KubernetesCertSource{}) {
 		r, err := openCertFromCluster(s.CertSource.Kubernetes)
-		cert, err = ioutil.ReadAll(r)
+		if err != nil {
+			return cert, err
+		}
+		cert, err := ioutil.ReadAll(r)
 		return cert, err
 	} else if s.CertSource.Url != "" {
 		r, err := openRemoteCert(s.CertSource.Url)
+		if err != nil {
+			return cert, err
+		}
 		cert, err := ioutil.ReadAll(r)
 		return cert, err
 	} else if s.CertSource.Path != "" {
 		r, err := openLocalCert(s.CertSource.Path)
+		if err != nil {
+			return cert, err
+		}
 		cert, err := ioutil.ReadAll(r)
 		return cert, err
 	}
@@ -107,6 +116,7 @@ func openCertFromCluster(kubernetes KubernetesCertSource) (io.ReadCloser, error)
 		Services(kubernetes.Namespace).
 		ProxyGet("http", kubernetes.Name, "", "/v1/cert.pem", nil).
 		Stream()
+
 	if err != nil {
 		return nil, fmt.Errorf("cannot fetch certificate: %v", err)
 	}
