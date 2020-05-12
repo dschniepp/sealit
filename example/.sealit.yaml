@@ -3,13 +3,13 @@ sealing_rules:
     name: mysecret
     namespace: default
     encrypt_regex: (password|pin)$
+    maxAge: 720h
     cert: 
       path: cert.pem
-      maxAge: 720h
   - file_regex: \.prod\.yaml$
     name: mysecret
     namespace: default
     encrypt_regex: (password|pin)$
+    maxAge: 720h
     cert: 
       path: cert.pem
-      maxAge: 720h

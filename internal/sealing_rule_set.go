@@ -17,20 +17,28 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
-type SealingRuleSet struct {
-	FileRegex    string     `yaml:"file_regex"`
-	Name         string     `yaml:"name"`
-	Namespace    string     `yaml:"namespace"`
-	EncryptRegex string     `yaml:"encrypt_regex"`
-	CertSource   CertSource `yaml:"cert"`
+type certSource interface {
+	fetch() (io.ReadCloser, error)
 }
 
-type CertSource struct {
-	Url        string               `yaml:"url,omitempty"`
-	Path       string               `yaml:"path,omitempty"`
-	Kubernetes KubernetesCertSource `yaml:"kubernetes,omitempty"`
-	MaxAge     time.Duration        `yaml:"maxAge"`
+type SealingRuleSet struct {
+	FileRegex    string        `yaml:"file_regex"`
+	Name         string        `yaml:"name"`
+	Namespace    string        `yaml:"namespace"`
+	EncryptRegex string        `yaml:"encrypt_regex"`
+	MaxAge       time.Duration `yaml:"maxAge"`
+	CertSources  CertSources   `yaml:"cert"`
 }
+
+type CertSources struct {
+	Url        UrlCertSource        `yaml:"url,omitempty"`
+	Path       PathCertSource       `yaml:"path,omitempty"`
+	Kubernetes KubernetesCertSource `yaml:"kubernetes,omitempty"`
+}
+
+type UrlCertSource string
+
+type PathCertSource string
 
 type KubernetesCertSource struct {
 	Context   string `yaml:"context"`
@@ -38,56 +46,57 @@ type KubernetesCertSource struct {
 	Namespace string `yaml:"namespace"`
 }
 
-// GetRecentCert Fetch recent cert.
+// GetCert fetches the cert from different sources
 // Prio:
-// 1. fetch from cluster
+// 1. fetch from Kubernetes cluster
 // 2. fetch from url
-// 3. fetch from file system
-func (s *SealingRuleSet) GetRecentCert() (cert []byte, err error) {
-	if (s.CertSource.Kubernetes != KubernetesCertSource{}) {
-		r, err := openCertFromCluster(s.CertSource.Kubernetes)
-		if err != nil {
-			return cert, err
-		}
-		cert, err := ioutil.ReadAll(r)
-		return cert, err
-	} else if s.CertSource.Url != "" {
-		r, err := openRemoteCert(s.CertSource.Url)
-		if err != nil {
-			return cert, err
-		}
-		cert, err := ioutil.ReadAll(r)
-		return cert, err
-	} else if s.CertSource.Path != "" {
-		r, err := openLocalCert(s.CertSource.Path)
-		if err != nil {
-			return cert, err
-		}
-		cert, err := ioutil.ReadAll(r)
-		return cert, err
+// 3. fetch from file path
+func (cs *SealingRuleSet) GetCert() (string, error) {
+	res, err := cs.CertSources.getCertSource()
+	if err != nil {
+		return "", err
 	}
-	err = errors.New("no cert provider like `path`, `url`, or `kubernetes` was specified")
-	return cert, err
+
+	r, err := res.fetch()
+	if err != nil {
+		return "", err
+	}
+
+	cert, err := ioutil.ReadAll(r)
+
+	return string(cert), err
 }
 
-func openLocalCert(filename string) (io.ReadCloser, error) {
+func (cs *CertSources) getCertSource() (certSource, error) {
+	if (cs.Kubernetes != KubernetesCertSource{}) {
+		return cs.Kubernetes, nil
+	} else if cs.Url != "" {
+		return cs.Url, nil
+	} else if cs.Path != "" {
+		return cs.Path, nil
+	}
+
+	return nil, errors.New("no cert provider like `path`, `url`, or `kubernetes` was specified")
+}
+
+func (path PathCertSource) fetch() (io.ReadCloser, error) {
 	log.Print("[DEBUG] Fetch cert from file system")
-	return os.Open(filename)
+	return os.Open(string(path))
 }
 
-func openRemoteCert(uri string) (io.ReadCloser, error) {
+func (url UrlCertSource) fetch() (io.ReadCloser, error) {
 	log.Print("[DEBUG] Fetch cert from url")
-	resp, err := http.Get(uri)
+	resp, err := http.Get(string(url))
 	if err != nil {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("cannot fetch %q: %s", uri, resp.Status)
+		return nil, fmt.Errorf("cannot fetch %q: %s", string(url), resp.Status)
 	}
 	return resp.Body, nil
 }
 
-func openCertFromCluster(kubernetes KubernetesCertSource) (io.ReadCloser, error) {
+func (kubernetes KubernetesCertSource) fetch() (io.ReadCloser, error) {
 	log.Print("[DEBUG] Fetch cert from within Kubernetes sealed secrets service")
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig

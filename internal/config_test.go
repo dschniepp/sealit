@@ -8,12 +8,12 @@ sealing_rules:
     name: mysecret
     namespace: default
     encrypt_regex: (password|pin)$
+    maxAge: 720h
     cert: 
       kubernetes: 
         context: docker-desktop
         name: sealit-sealed-secrets
         namespace: kube-system
-      maxAge: 720h
 `)
 
 func TestLoadConfig(t *testing.T) {

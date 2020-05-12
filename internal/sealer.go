@@ -30,7 +30,7 @@ type Sealer struct {
 	metadata  *Metadata
 }
 
-func NewSealer(srs *SealingRuleSet, m *Metadata, fetchCert bool) (*Sealer, error) {
+func NewSealer(srs *SealingRuleSet, m *Metadata, fetchCert bool) (s *Sealer, err error) {
 	log.Printf("[DEBUG] Create sealer based on sealing rules %v and metadata %v", srs, m)
 	if *m == (Metadata{}) {
 		log.Printf("[DEBUG] File was never encoded before, init metadata block")
@@ -38,12 +38,9 @@ func NewSealer(srs *SealingRuleSet, m *Metadata, fetchCert bool) (*Sealer, error
 		m.Name = srs.Name
 		m.Namespace = srs.Namespace
 
-		cert, err := srs.GetRecentCert()
-		if err != nil {
+		if m.Cert, err = srs.GetCert(); err != nil {
 			return nil, err
 		}
-
-		m.Cert = string(cert)
 	} else {
 		log.Printf("[DEBUG] File has encoded values and a meta block")
 
@@ -55,15 +52,16 @@ func NewSealer(srs *SealingRuleSet, m *Metadata, fetchCert bool) (*Sealer, error
 			return nil, fmt.Errorf("old secrets are limited to secret namespace %s, but new namespace is %s. Re-encryption is needed", m.Namespace, srs.Namespace)
 		}
 
-		certStatus, err := certStatus([]byte(m.Cert), srs.CertSource.MaxAge)
+		certStatus, err := certStatus([]byte(m.Cert), srs.MaxAge)
 
 		if err != nil {
 			return nil, err
 		}
 
 		if certStatus != validCert || fetchCert {
-			cert, _ := srs.GetRecentCert()
-			m.Cert = string(cert)
+			if m.Cert, err = srs.GetCert(); err != nil {
+				return nil, err
+			}
 		}
 	}
 

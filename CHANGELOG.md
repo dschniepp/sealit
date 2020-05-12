@@ -6,10 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- `--fetch-cert` flag to `seal` and `verify` to enforce a cert load
+- `--fetch-cert` flag to `seal` and `verify` for enforcing a cert load
 - Warning in case a secret value is an empty string or padded with whitespace
 ### Changed
 - Renamed cert source `controller` to `kubernetes`
+- Moved `maxAge` one level up
 
 ## [0.2.1] - 2020-05-11
 ### Changed

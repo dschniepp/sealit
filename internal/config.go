@@ -26,7 +26,8 @@ func ExampleConfig() Config {
 				Name:         "secret",
 				Namespace:    "default",
 				EncryptRegex: "(password|pin)$",
-				CertSource: CertSource{
+				MaxAge:       d,
+				CertSources: CertSources{
 					Url:  "https://example.org",
 					Path: "cert.pem",
 					Kubernetes: KubernetesCertSource{
@@ -34,7 +35,6 @@ func ExampleConfig() Config {
 						Name:      "sealed-secrets",
 						Namespace: "kube-system",
 					},
-					MaxAge: d,
 				},
 			},
 		},
