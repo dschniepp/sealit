@@ -29,7 +29,7 @@ func ExampleConfig() Config {
 				CertSource: CertSource{
 					Url:  "https://example.org",
 					Path: "cert.pem",
-					Controller: SealedSecretController{
+					Kubernetes: KubernetesCertSource{
 						Context:   "KubeContextName",
 						Name:      "sealed-secrets",
 						Namespace: "kube-system",

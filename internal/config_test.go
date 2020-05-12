@@ -9,7 +9,7 @@ sealing_rules:
     namespace: default
     encrypt_regex: (password|pin)$
     cert: 
-      controller: 
+      kubernetes: 
         context: docker-desktop
         name: sealit-sealed-secrets
         namespace: kube-system

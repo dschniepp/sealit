@@ -26,13 +26,13 @@ type SealingRuleSet struct {
 }
 
 type CertSource struct {
-	Url        string                 `yaml:"url,omitempty"`
-	Path       string                 `yaml:"path,omitempty"`
-	Controller SealedSecretController `yaml:"controller,omitempty"`
-	MaxAge     time.Duration          `yaml:"maxAge"`
+	Url        string               `yaml:"url,omitempty"`
+	Path       string               `yaml:"path,omitempty"`
+	Kubernetes KubernetesCertSource `yaml:"kubernetes,omitempty"`
+	MaxAge     time.Duration        `yaml:"maxAge"`
 }
 
-type SealedSecretController struct {
+type KubernetesCertSource struct {
 	Context   string `yaml:"context"`
 	Name      string `yaml:"name"`
 	Namespace string `yaml:"namespace"`
@@ -44,8 +44,8 @@ type SealedSecretController struct {
 // 2. fetch from url
 // 3. fetch from file system
 func (s *SealingRuleSet) GetRecentCert() (cert []byte, err error) {
-	if (s.CertSource.Controller != SealedSecretController{}) {
-		r, err := openCertFromCluster(s.CertSource.Controller)
+	if (s.CertSource.Kubernetes != KubernetesCertSource{}) {
+		r, err := openCertFromCluster(s.CertSource.Kubernetes)
 		cert, err = ioutil.ReadAll(r)
 		return cert, err
 	} else if s.CertSource.Url != "" {
@@ -57,17 +57,17 @@ func (s *SealingRuleSet) GetRecentCert() (cert []byte, err error) {
 		cert, err := ioutil.ReadAll(r)
 		return cert, err
 	}
-	err = errors.New("no cert provider like `path`, `url`, or `controller` was specified")
+	err = errors.New("no cert provider like `path`, `url`, or `kubernetes` was specified")
 	return cert, err
 }
 
 func openLocalCert(filename string) (io.ReadCloser, error) {
-	log.Print("[DEBUG] Fetch from file system")
+	log.Print("[DEBUG] Fetch cert from file system")
 	return os.Open(filename)
 }
 
 func openRemoteCert(uri string) (io.ReadCloser, error) {
-	log.Print("[DEBUG] Fetch from url")
+	log.Print("[DEBUG] Fetch cert from url")
 	resp, err := http.Get(uri)
 	if err != nil {
 		return nil, err
@@ -78,8 +78,8 @@ func openRemoteCert(uri string) (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
-func openCertFromCluster(controller SealedSecretController) (io.ReadCloser, error) {
-	log.Print("[DEBUG] Fetch from within K8s sealed secret controller")
+func openCertFromCluster(kubernetes KubernetesCertSource) (io.ReadCloser, error) {
+	log.Print("[DEBUG] Fetch cert from within Kubernetes sealed secrets service")
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
 	if kubeConfig != "" {
@@ -87,8 +87,8 @@ func openCertFromCluster(controller SealedSecretController) (io.ReadCloser, erro
 	}
 	overrides := clientcmd.ConfigOverrides{}
 
-	if controller.Context != "" {
-		overrides.CurrentContext = controller.Context
+	if kubernetes.Context != "" {
+		overrides.CurrentContext = kubernetes.Context
 	}
 
 	clientConfig := clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
@@ -104,8 +104,8 @@ func openCertFromCluster(controller SealedSecretController) (io.ReadCloser, erro
 	}
 
 	f, err := restClient.
-		Services(controller.Namespace).
-		ProxyGet("http", controller.Name, "", "/v1/cert.pem", nil).
+		Services(kubernetes.Namespace).
+		ProxyGet("http", kubernetes.Name, "", "/v1/cert.pem", nil).
 		Stream()
 	if err != nil {
 		return nil, fmt.Errorf("cannot fetch certificate: %v", err)

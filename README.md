@@ -54,7 +54,7 @@ sealing_rules:
     cert:
         url: https://example.org
         path: cert.pem
-        controller:
+        kubernetes:
             context: KubeContextName
             name: sealed-secrets
             namespace: kube-system
@@ -101,7 +101,7 @@ sealing_rules:
   - ...
     cert:
         ...
-        controller:
+        kubernetes:
             context: KubeContextName
             name: sealed-secrets
             namespace: kube-system
