@@ -14,7 +14,7 @@ import (
 func main() {
 	app := &cli.App{
 		Name:     "sealit",
-		Version:  "v0.2.0",
+		Version:  "v0.3.0",
 		Compiled: time.Now(),
 		Usage:    "alternative cli for sealed secrets",
 		Commands: []*cli.Command{
