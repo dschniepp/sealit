@@ -6,10 +6,12 @@ import (
 )
 
 func TestGetSource(t *testing.T) {
-	cs := &CertSources{
-		Path: "Path",
+	c := &Cert{
+		Sources: &Sources{
+			Path: "Path",
+		},
 	}
-	src, _ := cs.getCertSource()
+	src, _ := c.getSource()
 	srcKey := reflect.ValueOf(src).String()
 
 	if srcKey != "Path" {
@@ -18,8 +20,8 @@ func TestGetSource(t *testing.T) {
 }
 
 func TestNoSources(t *testing.T) {
-	cs := &CertSources{}
-	_, err := cs.getCertSource()
+	c := &Cert{}
+	_, err := c.getSource()
 
 	if err == nil {
 		t.Error("Expected an error but got non")

@@ -26,14 +26,16 @@ func ExampleConfig() Config {
 				Name:         "secret",
 				Namespace:    "default",
 				SecretsRegex: "(password|pin)$",
-				MaxAge:       d,
-				CertSources: CertSources{
-					Url:  "https://example.org",
-					Path: "cert.pem",
-					Kubernetes: KubernetesCertSource{
-						Context:   "KubeContextName",
-						Name:      "sealed-secrets",
-						Namespace: "kube-system",
+				Cert: &Cert{
+					MaxAge: d,
+					Sources: &Sources{
+						Kubernetes: KubernetesCertSource{
+							Context:   "KubeContextName",
+							Name:      "sealed-secrets",
+							Namespace: "kube-system",
+						},
+						Url:  "https://example.org",
+						Path: "cert.pem",
 					},
 				},
 			},

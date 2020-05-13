@@ -54,7 +54,7 @@ func NewSealer(srs *SealingRuleSet, m *Metadata, fetchCert bool) (s *Sealer, err
 			return nil, fmt.Errorf("old secrets are limited to secret namespace %s, but new namespace is %s. Re-encryption is needed", m.Namespace, srs.Namespace)
 		}
 
-		certStatus, err := certStatus([]byte(m.Cert), srs.MaxAge)
+		certStatus, err := certStatus([]byte(m.Cert), srs.Cert.MaxAge)
 
 		if err != nil {
 			return nil, err

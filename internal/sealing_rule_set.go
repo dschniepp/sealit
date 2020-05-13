@@ -23,15 +23,19 @@ type certSource interface {
 }
 
 type SealingRuleSet struct {
-	FileRegex    string        `yaml:"fileRegex"`
-	Name         string        `yaml:"name"`
-	Namespace    string        `yaml:"namespace"`
-	SecretsRegex string        `yaml:"secretsRegex"`
-	MaxAge       time.Duration `yaml:"maxAge"`
-	CertSources  CertSources   `yaml:"cert"`
+	FileRegex    string `yaml:"fileRegex"`
+	Name         string `yaml:"name"`
+	Namespace    string `yaml:"namespace"`
+	SecretsRegex string `yaml:"secretsRegex"`
+	Cert         *Cert  `yaml:"cert"`
 }
 
-type CertSources struct {
+type Cert struct {
+	MaxAge  time.Duration `yaml:"maxAge"`
+	Sources *Sources      `yaml:"sources"`
+}
+
+type Sources struct {
 	Url        UrlCertSource        `yaml:"url,omitempty"`
 	Path       PathCertSource       `yaml:"path,omitempty"`
 	Kubernetes KubernetesCertSource `yaml:"kubernetes,omitempty"`
@@ -57,7 +61,7 @@ func (srs *SealingRuleSet) GetRegexForSecrets() *regexp.Regexp {
 // 2. fetch from url
 // 3. fetch from file path
 func (cs *SealingRuleSet) GetCert() (string, error) {
-	res, err := cs.CertSources.getCertSource()
+	res, err := cs.Cert.getSource()
 	if err != nil {
 		return "", err
 	}
@@ -72,16 +76,18 @@ func (cs *SealingRuleSet) GetCert() (string, error) {
 	return string(cert), err
 }
 
-func (cs *CertSources) getCertSource() (certSource, error) {
-	if (cs.Kubernetes != KubernetesCertSource{}) {
-		return cs.Kubernetes, nil
-	} else if cs.Url != "" {
-		return cs.Url, nil
-	} else if cs.Path != "" {
-		return cs.Path, nil
+func (c *Cert) getSource() (certSource, error) {
+	if c.Sources != nil {
+		if (c.Sources.Kubernetes != KubernetesCertSource{}) {
+			return c.Sources.Kubernetes, nil
+		} else if c.Sources.Url != "" {
+			return c.Sources.Url, nil
+		} else if c.Sources.Path != "" {
+			return c.Sources.Path, nil
+		}
 	}
 
-	return nil, errors.New("no cert provider like `path`, `url`, or `kubernetes` was specified")
+	return nil, errors.New("no cert source like `kubernetes`, `url` or `path` was specified")
 }
 
 func (path PathCertSource) fetch() (io.ReadCloser, error) {

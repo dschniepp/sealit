@@ -51,14 +51,15 @@ sealingRules:
     name: secret # Name of the future secret
     namespace: default # Namespace of the future secret
     secretsRegex: (password|pin)$ # Regex of the key names which should be encrypted
-    maxAge: 720h0m0s
     cert:
-        url: https://example.org
-        path: cert.pem
-        kubernetes:
-            context: KubeContextName
-            name: sealed-secrets
-            namespace: kube-system
+        maxAge: 720h0m0s
+        sources:
+          kubernetes:
+              context: KubeContextName
+              name: sealed-secrets
+              namespace: kube-system
+          url: https://example.org
+          path: cert.pem
 ```
 
 ### Cert locations and age
@@ -79,7 +80,9 @@ sealingRules:
   - ...
     cert:
         ...
-        path: "cert.pem"
+        sources:
+            ...
+            path: "cert.pem"
 ```
 
 #### Remote cert file
@@ -89,7 +92,9 @@ sealingRules:
   - ...
     cert:
         ...
-        url: https://localhost:8080/cert.pem
+        sources:
+            ...
+            url: https://localhost:8080/cert.pem
 ```
 
 #### Remote cert from Kubernetes
@@ -99,10 +104,12 @@ sealingRules:
   - ...
     cert:
         ...
-        kubernetes:
-            context: KubeContextName
-            name: sealed-secrets
-            namespace: kube-system
+        sources:
+            ...
+            kubernetes:
+                context: KubeContextName
+                name: sealed-secrets
+                namespace: kube-system
 ```
 
 ## Prevent committing not encrypted files
