@@ -23,8 +23,7 @@ func main() {
 				Aliases: []string{"i"},
 				Usage:   "create a config file in the current dir",
 				Action: func(c *cli.Context) (err error) {
-					err = internal.Init(c.String("config"), c.Bool("force"))
-					return err
+					return internal.Init(c.String("config"), c.Bool("force"))
 				},
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
@@ -40,8 +39,11 @@ func main() {
 				Usage:   "seal all secrets",
 				Action: func(c *cli.Context) (err error) {
 					sealit, err := internal.New(c.String("config"), c.String("kubeconfig"), c.Bool("fetch-cert"))
-					err = sealit.Seal(c.Bool("force"))
-					return err
+					if err != nil {
+						return err
+					}
+
+					return sealit.Seal(c.Bool("force"))
 				},
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
@@ -62,8 +64,10 @@ func main() {
 				Usage:   "verify if all secrets are encrypted",
 				Action: func(c *cli.Context) (err error) {
 					sealit, err := internal.New(c.String("config"), c.String("kubeconfig"), c.Bool("fetch-cert"))
-					err = sealit.Verify()
-					return err
+					if err != nil {
+						return err
+					}
+					return sealit.Verify()
 				},
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
@@ -77,9 +81,8 @@ func main() {
 				Name:    "template",
 				Aliases: []string{"t"},
 				Usage:   "create a sealed secrets template",
-				Action: func(c *cli.Context) (err error) {
-					err = internal.Template(c.String("file"))
-					return err
+				Action: func(c *cli.Context) error {
+					return internal.Template(c.String("file"))
 				},
 				Flags: []cli.Flag{
 					&cli.StringFlag{

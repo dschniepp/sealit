@@ -49,32 +49,41 @@ func NewValueFile(d []byte) (*File, error) {
 	return &f, nil
 }
 
-func (f *File) ApplyFuncToValues(manipulator func(*yaml.Node, *yaml.Node) error) {
+func (f *File) ApplyFuncToValues(manipulator func(*yaml.Node, *yaml.Node) error) error {
 	log.Printf("[DEBUG] Apply manipulation function to values tree")
-	walkAndApplyFunc(f.values.Content[0], manipulator)
+	return walkAndApplyFunc(f.values.Content[0], manipulator)
 }
 
-func walkAndApplyFunc(node *yaml.Node, manipulator func(*yaml.Node, *yaml.Node) error) {
+func walkAndApplyFunc(node *yaml.Node, manipulator func(*yaml.Node, *yaml.Node) error) (err error) {
 	for i := 0; i < len(node.Content); i = i + 2 {
 		key := node.Content[i]
 		value := node.Content[i+1]
 		// Only walk through non sealit elements
 		if key.Value != sealitYamlKey {
 			if value.Kind == yaml.ScalarNode {
-				manipulator(key, value)
+				if err := manipulator(key, value); err != nil {
+					return err
+				}
 			} else if value.Kind == yaml.SequenceNode {
 				for _, childNode := range value.Content {
 					if childNode.Kind == yaml.ScalarNode {
-						manipulator(key, childNode)
+						if err := manipulator(key, childNode); err != nil {
+							return err
+						}
 					} else {
-						walkAndApplyFunc(childNode, manipulator)
+						if err := walkAndApplyFunc(childNode, manipulator); err != nil {
+							return err
+						}
 					}
 				}
 			} else {
-				walkAndApplyFunc(value, manipulator)
+				if err := walkAndApplyFunc(value, manipulator); err != nil {
+					return err
+				}
 			}
 		}
 	}
+	return nil
 }
 
 func (f *File) Export() ([]byte, error) {

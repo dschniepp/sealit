@@ -74,7 +74,7 @@ func New(sealitconfig string, kubeconfig string, fetchCert bool) (*Sealit, error
 	configFile, err := ioutil.ReadFile(sealitconfig)
 
 	if err != nil {
-		fmt.Printf("[ERROR] %v\n", err)
+		return nil, err
 	}
 
 	config, err := LoadConfig(configFile, kubeconfig)
@@ -109,7 +109,12 @@ func (s *Sealit) Seal(force bool) (err error) {
 		}
 
 		log.Print("[DEBUG] Apply sealing function")
-		vf.ApplyFuncToValues(sealer.seal)
+		err = vf.ApplyFuncToValues(sealer.Seal)
+		if err != nil {
+			return err
+		}
+
+		log.Print("[DEBUG] Export sealed yaml.Node tree")
 		data, err = vf.Export()
 		if err != nil {
 			return err
@@ -120,13 +125,13 @@ func (s *Sealit) Seal(force bool) (err error) {
 }
 
 func (s *Sealit) Verify() (err error) {
-	return s.applyToEveryMatchingFile(func(srs *SealingRuleSet, f os.FileInfo) (err error) {
-		data, err := ioutil.ReadFile(f.Name())
+	return s.applyToEveryMatchingFile(func(srs *SealingRuleSet, fi os.FileInfo) (err error) {
+		data, err := ioutil.ReadFile(fi.Name())
 		if err != nil {
 			return err
 		}
 
-		log.Printf("[DEBUG] Load values file %s", f.Name())
+		log.Printf("[DEBUG] Load values file %s", fi.Name())
 		vf, err := NewValueFile(data)
 		if err != nil {
 			return err
@@ -139,29 +144,35 @@ func (s *Sealit) Verify() (err error) {
 		}
 
 		log.Print("[DEBUG] Apply sealing function")
-		vf.ApplyFuncToValues(sealer.seal)
-		log.Print("[DEBUG] Check of sealing date was refreshed")
-		if vf.Metadata == nil || vf.Metadata.SealedAt != sealer.metadata.SealedAt {
-			return fmt.Errorf("%s is not completely encrypted", f.Name())
+		err = vf.ApplyFuncToValues(sealer.Verify)
+
+		if err != nil {
+			return fmt.Errorf("in file %s %s", fi.Name(), err.Error())
 		}
 
 		return err
 	})
 }
 
-func (s *Sealit) applyToEveryMatchingFile(fun func(*SealingRuleSet, os.FileInfo) error) (err error) {
+func (s *Sealit) applyToEveryMatchingFile(fun func(*SealingRuleSet, os.FileInfo) error) error {
 	files, err := ioutil.ReadDir(".")
+
+	if err != nil {
+		return err
+	}
 
 	for _, f := range files {
 		if !f.IsDir() {
 			for _, srs := range s.config.SealingRuleSets {
 				fileNamePattern := regexp.MustCompile(srs.FileRegex)
 				if fileNamePattern.MatchString(f.Name()) {
-					err = fun(&srs, f)
+					if err := fun(&srs, f); err != nil {
+						return err
+					}
 				}
 			}
 		}
 	}
 
-	return err
+	return nil
 }

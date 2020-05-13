@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Renamed cert source `controller` to `kubernetes`
 - Moved `maxAge` one level up
+### Fixed
+- Flaky verify command
 
 ## [0.2.1] - 2020-05-11
 ### Changed

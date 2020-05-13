@@ -79,7 +79,14 @@ func NewSealer(srs *SealingRuleSet, m *Metadata, fetchCert bool) (s *Sealer, err
 	}, nil
 }
 
-func (s *Sealer) seal(key *yaml.Node, value *yaml.Node) error {
+func (s *Sealer) Verify(key *yaml.Node, value *yaml.Node) error {
+	if s.regexp.MatchString(key.Value) && !strings.HasPrefix(value.Value, "ENC:") {
+		return fmt.Errorf("key `%s` is not encrypted", key.Value)
+	}
+	return nil
+}
+
+func (s *Sealer) Seal(key *yaml.Node, value *yaml.Node) error {
 	if s.regexp.MatchString(key.Value) {
 		if !strings.HasPrefix(value.Value, "ENC:") {
 			ciphertext, err := crypto.HybridEncrypt(rand.Reader, s.publicKey, []byte(value.Value), s.label)
@@ -97,8 +104,7 @@ func (s *Sealer) seal(key *yaml.Node, value *yaml.Node) error {
 			encodedSecret := base64.StdEncoding.EncodeToString(ciphertext)
 			value.SetString(fmt.Sprintf("ENC:%s", encodedSecret))
 			s.metadata.SealedAt = time.Now().Format(time.RFC3339)
-
-			log.Printf("[INFO] Encrypted value of `%s`", key.Value)
+			log.Printf("[DEBUG] Encrypted value of `%s`", key.Value)
 
 			return nil
 		}

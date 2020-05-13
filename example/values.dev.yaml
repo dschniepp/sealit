@@ -1,3 +1,5 @@
 env:
     password: secret!
     username: john
+    secret: john
+    asd_username: john
