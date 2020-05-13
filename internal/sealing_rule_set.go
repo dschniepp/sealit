@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"time"
 
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -22,10 +23,10 @@ type certSource interface {
 }
 
 type SealingRuleSet struct {
-	FileRegex    string        `yaml:"file_regex"`
+	FileRegex    string        `yaml:"fileRegex"`
 	Name         string        `yaml:"name"`
 	Namespace    string        `yaml:"namespace"`
-	EncryptRegex string        `yaml:"encrypt_regex"`
+	SecretsRegex string        `yaml:"secretsRegex"`
 	MaxAge       time.Duration `yaml:"maxAge"`
 	CertSources  CertSources   `yaml:"cert"`
 }
@@ -44,6 +45,10 @@ type KubernetesCertSource struct {
 	Context   string `yaml:"context"`
 	Name      string `yaml:"name"`
 	Namespace string `yaml:"namespace"`
+}
+
+func (srs *SealingRuleSet) GetRegexForSecrets() *regexp.Regexp {
+	return regexp.MustCompile(srs.SecretsRegex)
 }
 
 // GetCert fetches the cert from different sources

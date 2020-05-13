@@ -23,11 +23,13 @@ const (
 	validCert
 )
 
+const encodeIdentifier = "ENC:"
+
 type Sealer struct {
-	regexp    *regexp.Regexp
-	publicKey *rsa.PublicKey
-	label     []byte
-	metadata  *Metadata
+	secretsRegexp *regexp.Regexp
+	publicKey     *rsa.PublicKey
+	label         []byte
+	metadata      *Metadata
 }
 
 func NewSealer(srs *SealingRuleSet, m *Metadata, fetchCert bool) (s *Sealer, err error) {
@@ -72,47 +74,54 @@ func NewSealer(srs *SealingRuleSet, m *Metadata, fetchCert bool) (s *Sealer, err
 	}
 
 	return &Sealer{
-		regexp:    regexp.MustCompile(srs.EncryptRegex),
-		publicKey: pKey,
-		label:     m.getLabel(),
-		metadata:  m,
+		secretsRegexp: srs.GetRegexForSecrets(),
+		publicKey:     pKey,
+		label:         m.getLabel(),
+		metadata:      m,
 	}, nil
 }
 
+func (s *Sealer) valueNeedsToBeSealed(key *yaml.Node, value *yaml.Node) bool {
+	if s.secretsRegexp.MatchString(key.Value) {
+		if !strings.HasPrefix(value.Value, encodeIdentifier) {
+			return true
+		}
+		log.Printf("[DEBUG] Value of `%s` was already encrypted", key.Value)
+
+		return false
+	}
+	log.Printf("[DEBUG] `%s` did not match regex %s", key.Value, s.secretsRegexp.String())
+
+	return false
+}
+
 func (s *Sealer) Verify(key *yaml.Node, value *yaml.Node) error {
-	if s.regexp.MatchString(key.Value) && !strings.HasPrefix(value.Value, "ENC:") {
+	if s.valueNeedsToBeSealed(key, value) {
 		return fmt.Errorf("key `%s` is not encrypted", key.Value)
 	}
+
 	return nil
 }
 
 func (s *Sealer) Seal(key *yaml.Node, value *yaml.Node) error {
-	if s.regexp.MatchString(key.Value) {
-		if !strings.HasPrefix(value.Value, "ENC:") {
-			ciphertext, err := crypto.HybridEncrypt(rand.Reader, s.publicKey, []byte(value.Value), s.label)
+	if s.valueNeedsToBeSealed(key, value) {
+		ciphertext, err := crypto.HybridEncrypt(rand.Reader, s.publicKey, []byte(value.Value), s.label)
 
-			if err != nil {
-				return err
-			}
-
-			if value.Value == "" {
-				log.Printf("[WARNING] Value of `%s` is an empty string", key.Value)
-			} else if value.Value != strings.TrimSpace(value.Value) {
-				log.Printf("[WARNING] Value of `%s` is padded with whitespace", key.Value)
-			}
-
-			encodedSecret := base64.StdEncoding.EncodeToString(ciphertext)
-			value.SetString(fmt.Sprintf("ENC:%s", encodedSecret))
-			s.metadata.SealedAt = time.Now().Format(time.RFC3339)
-			log.Printf("[DEBUG] Encrypted value of `%s`", key.Value)
-
-			return nil
+		if err != nil {
+			return err
 		}
-		log.Printf("[DEBUG] Value of `%s` was already encrypted", key.Value)
 
-		return nil
+		if value.Value == "" {
+			log.Printf("[WARNING] Value of `%s` is an empty string", key.Value)
+		} else if value.Value != strings.TrimSpace(value.Value) {
+			log.Printf("[WARNING] Value of `%s` is padded with whitespace", key.Value)
+		}
+
+		encodedSecret := base64.StdEncoding.EncodeToString(ciphertext)
+		value.SetString(fmt.Sprintf("%s%s", encodeIdentifier, encodedSecret))
+		s.metadata.SealedAt = time.Now().Format(time.RFC3339)
+		log.Printf("[DEBUG] Encrypted value of `%s`", key.Value)
 	}
-	log.Printf("[DEBUG] `%s` did not match regex %s", key.Value, s.regexp.String())
 
 	return nil
 }

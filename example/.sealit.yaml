@@ -1,15 +1,15 @@
-sealing_rules:
-  - file_regex: \.dev\.yaml$
+sealingRules:
+  - fileRegex: \.dev\.yaml$
     name: mysecret
     namespace: default
-    encrypt_regex: (password|pin)$
+    secretsRegex: (password|pin)$
     maxAge: 720h
     cert: 
       path: cert.pem
-  - file_regex: \.prod\.yaml$
+  - fileRegex: \.prod\.yaml$
     name: mysecret
     namespace: default
-    encrypt_regex: (password|pin)$
+    secretsRegex: (password|pin)$
     maxAge: 720h
     cert: 
       path: cert.pem

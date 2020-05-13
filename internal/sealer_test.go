@@ -17,9 +17,9 @@ func TestSealSecrets(t *testing.T) {
 	key, _ := testGeneratePrivateKey()
 
 	s := Sealer{
-		regexp:    regexp.MustCompile(`(password|pin)$`),
-		publicKey: &key.PublicKey,
-		metadata:  &Metadata{},
+		secretsRegexp: regexp.MustCompile(`(password|pin)$`),
+		publicKey:     &key.PublicKey,
+		metadata:      &Metadata{},
 	}
 
 	k := &yaml.Node{Value: "test_password"}
@@ -35,9 +35,9 @@ func TestVerifySecrets(t *testing.T) {
 	key, _ := testGeneratePrivateKey()
 
 	s := Sealer{
-		regexp:    regexp.MustCompile(`(password|pin)$`),
-		publicKey: &key.PublicKey,
-		metadata:  &Metadata{},
+		secretsRegexp: regexp.MustCompile(`(password|pin)$`),
+		publicKey:     &key.PublicKey,
+		metadata:      &Metadata{},
 	}
 
 	k := &yaml.Node{Value: "test_password"}
@@ -53,9 +53,9 @@ func TestVerifyUnsealedSecrets(t *testing.T) {
 	key, _ := testGeneratePrivateKey()
 
 	s := Sealer{
-		regexp:    regexp.MustCompile(`(password|pin)$`),
-		publicKey: &key.PublicKey,
-		metadata:  &Metadata{},
+		secretsRegexp: regexp.MustCompile(`(password|pin)$`),
+		publicKey:     &key.PublicKey,
+		metadata:      &Metadata{},
 	}
 
 	k := &yaml.Node{Value: "test_password"}
@@ -71,9 +71,9 @@ func TestSealingOfAlreadySealedSecrets(t *testing.T) {
 	key, _ := testGeneratePrivateKey()
 
 	s := Sealer{
-		regexp:    regexp.MustCompile(`(password|pin)$`),
-		publicKey: &key.PublicKey,
-		metadata:  &Metadata{},
+		secretsRegexp: regexp.MustCompile(`(password|pin)$`),
+		publicKey:     &key.PublicKey,
+		metadata:      &Metadata{},
 	}
 
 	k := &yaml.Node{Value: "test_password"}
@@ -89,9 +89,9 @@ func TestSealNonSecrets(t *testing.T) {
 	key, _ := testGeneratePrivateKey()
 
 	s := Sealer{
-		regexp:    regexp.MustCompile(`(password|pin)$`),
-		publicKey: &key.PublicKey,
-		metadata:  &Metadata{},
+		secretsRegexp: regexp.MustCompile(`(password|pin)$`),
+		publicKey:     &key.PublicKey,
+		metadata:      &Metadata{},
 	}
 
 	k := &yaml.Node{Value: "test"}

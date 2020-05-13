@@ -46,11 +46,11 @@ The filename can be overwritten by setting the `--config` flag.
 A sample configuration file can be created via `sealit init`.
 
 ```yaml
-sealing_rules:
-  - file_regex: \.dev\.yaml$ # Regex pattern for which files this rules are applied
+sealingRules:
+  - fileRegex: \.dev\.yaml$ # Regex pattern for which files this rules are applied
     name: secret # Name of the future secret
     namespace: default # Namespace of the future secret
-    encrypt_regex: (password|pin)$ # Regex of the key names which should be encrypted
+    secretsRegex: (password|pin)$ # Regex of the key names which should be encrypted
     maxAge: 720h0m0s
     cert:
         url: https://example.org
@@ -75,7 +75,7 @@ Otherwise the cert from the meta field within the `values.yaml` file is used for
 #### Local cert file
 
 ```yaml
-sealing_rules:
+sealingRules:
   - ...
     cert:
         ...
@@ -85,7 +85,7 @@ sealing_rules:
 #### Remote cert file
 
 ```yaml
-sealing_rules:
+sealingRules:
   - ...
     cert:
         ...
@@ -95,7 +95,7 @@ sealing_rules:
 #### Remote cert from Kubernetes
 
 ```yaml
-sealing_rules:
+sealingRules:
   - ...
     cert:
         ...

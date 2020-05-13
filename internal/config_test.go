@@ -3,11 +3,11 @@ package internal
 import "testing"
 
 var basicConfig = []byte(`
-sealing_rules:
-  - file_regex: \.dev\.yaml$
+sealingRules:
+  - fileRegex: \.dev\.yaml$
     name: mysecret
     namespace: default
-    encrypt_regex: (password|pin)$
+    secretsRegex: (password|pin)$
     maxAge: 720h
     cert: 
       kubernetes: 

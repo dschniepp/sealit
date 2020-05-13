@@ -12,7 +12,7 @@ import (
 var kubeConfig string
 
 type Config struct {
-	SealingRuleSets []SealingRuleSet `yaml:"sealing_rules"`
+	SealingRuleSets []SealingRuleSet `yaml:"sealingRules"`
 }
 
 // ExampleConfig Provide an example config of the `.sealit.yaml`
@@ -25,7 +25,7 @@ func ExampleConfig() Config {
 				FileRegex:    "\\.dev\\.yaml$",
 				Name:         "secret",
 				Namespace:    "default",
-				EncryptRegex: "(password|pin)$",
+				SecretsRegex: "(password|pin)$",
 				MaxAge:       d,
 				CertSources: CertSources{
 					Url:  "https://example.org",
