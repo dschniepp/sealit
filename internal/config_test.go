@@ -21,7 +21,7 @@ sealingRules:
 `)
 
 func TestLoadConfig(t *testing.T) {
-	config, _ := LoadConfig(basicConfig, "~/.kube/config")
+	config, _ := LoadConfig(basicConfig)
 
 	maxAge := config.SealingRuleSets[0].Cert.MaxAge
 	duration, _ := time.ParseDuration("720h")

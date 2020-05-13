@@ -4,12 +4,7 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
-
-	// Register Auth providers
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
-
-var kubeConfig string
 
 type Config struct {
 	SealingRuleSets []SealingRuleSet `yaml:"sealingRules"`
@@ -43,9 +38,6 @@ func ExampleConfig() Config {
 	}
 }
 
-func LoadConfig(file []byte, kubeConfig string) (Config, error) {
-	kubeConfig = kubeConfig
-	var config Config
-	err := yaml.Unmarshal(file, &config)
-	return config, err
+func LoadConfig(file []byte) (config Config, err error) {
+	return config, yaml.Unmarshal(file, &config)
 }

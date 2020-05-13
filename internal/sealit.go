@@ -70,6 +70,7 @@ func Template(sealedSecretPath string) (err error) {
 }
 
 func New(sealitconfig string, kubeconfig string, fetchCert bool) (*Sealit, error) {
+	kubeConfig = kubeconfig
 	log.Printf("[DEBUG] Load config file %s", sealitconfig)
 	configFile, err := ioutil.ReadFile(sealitconfig)
 
@@ -77,7 +78,7 @@ func New(sealitconfig string, kubeconfig string, fetchCert bool) (*Sealit, error
 		return nil, err
 	}
 
-	config, err := LoadConfig(configFile, kubeconfig)
+	config, err := LoadConfig(configFile)
 
 	if err != nil {
 		return nil, err

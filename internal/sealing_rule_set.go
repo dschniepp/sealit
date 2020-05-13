@@ -18,6 +18,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
+var kubeConfig string
+
 type certSource interface {
 	fetch() (io.ReadCloser, error)
 }
