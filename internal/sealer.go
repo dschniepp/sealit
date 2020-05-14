@@ -145,7 +145,7 @@ func (r *Resealer) Reseal(key *yaml.Node, value *yaml.Node) error {
 
 			value.SetString(string(plaintext))
 
-			log.Printf("[DEBUG] Decrypted value of `%s` %s", key.Value, plaintext)
+			log.Printf("[DEBUG] Decrypted value of `%s`", key.Value)
 		}
 
 		ciphertext, err := crypto.HybridEncrypt(rand.Reader, r.publicKey, []byte(value.Value), r.newLabel)
