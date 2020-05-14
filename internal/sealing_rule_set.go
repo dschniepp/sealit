@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"crypto/rsa"
 	"errors"
 	"fmt"
 	"io"
@@ -9,10 +10,17 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"sort"
 	"time"
 
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
+	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
+	certUtil "k8s.io/client-go/util/cert"
+	"k8s.io/client-go/util/keyutil"
 
 	// Register Auth providers
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -53,7 +61,7 @@ type KubernetesCertSource struct {
 	Namespace string `yaml:"namespace"`
 }
 
-func (srs *SealingRuleSet) GetRegexForSecrets() *regexp.Regexp {
+func (srs *SealingRuleSet) GetSecretsRegex() *regexp.Regexp {
 	return regexp.MustCompile(srs.SecretsRegex)
 }
 
@@ -144,4 +152,87 @@ func (kubernetes KubernetesCertSource) fetch() (io.ReadCloser, error) {
 	}
 
 	return f, nil
+}
+
+func (k KubernetesCertSource) fetchKeys() (map[string]*rsa.PrivateKey, *rsa.PublicKey, error) {
+	log.Print("[DEBUG] Fetch cert from within Kubernetes sealed secrets service")
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
+	if kubeConfig != "" {
+		loadingRules.ExplicitPath = kubeConfig
+	}
+	overrides := clientcmd.ConfigOverrides{}
+
+	if k.Context != "" {
+		overrides.CurrentContext = k.Context
+	}
+
+	clientConfig := clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
+	conf, err := clientConfig.ClientConfig()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	restClient, err := corev1.NewForConfig(conf)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	list, err := restClient.Secrets(k.Namespace).List(metav1.ListOptions{
+		LabelSelector: "sealedsecrets.bitnami.com/sealed-secrets-key",
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(list.Items) == 0 {
+		return nil, nil, fmt.Errorf("No certificates found")
+	}
+
+	sort.Sort(ssv1alpha1.ByCreationTimestamp(list.Items))
+
+	latestKey := &list.Items[len(list.Items)-1]
+
+	privKey, err := keyutil.ParsePrivateKeyPEM(latestKey.Data[v1.TLSPrivateKeyKey])
+	if err != nil {
+		return nil, nil, err
+	}
+
+	certs, err := certUtil.ParseCertsPEM(latestKey.Data[v1.TLSCertKey])
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(certs) == 0 {
+		return nil, nil, fmt.Errorf("Failed to read any certificates")
+	}
+
+	rsaPrivKey := privKey.(*rsa.PrivateKey)
+	fp, err := crypto.PublicKeyFingerprint(&rsaPrivKey.PublicKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	privKeys := map[string]*rsa.PrivateKey{fp: rsaPrivKey}
+
+	cert, ok := certs[0].PublicKey.(*rsa.PublicKey)
+
+	if !ok {
+		return nil, nil, fmt.Errorf("Expected RSA public key but found %v", certs[0].PublicKey)
+	}
+
+	return privKeys, cert, err
+}
+
+func (s *SealingRuleSet) getLabel() []byte {
+	if s.Name != "" && s.Namespace != "" {
+		log.Printf("[DEBUG] Scope of secrets is limited to secert: `%s` and namespace: `%s`", s.Name, s.Namespace)
+		return ssv1alpha1.EncryptionLabel(s.Namespace, s.Name, ssv1alpha1.StrictScope)
+	} else if s.Name == "" && s.Namespace != "" {
+		log.Printf("[DEBUG] Scope of secrets is limited to namespace: `%s`", s.Namespace)
+		return ssv1alpha1.EncryptionLabel(s.Namespace, s.Name, ssv1alpha1.NamespaceWideScope)
+	} else {
+		log.Print("[DEBUG] Scope of secrets is not limited")
+		return ssv1alpha1.EncryptionLabel(s.Namespace, s.Name, ssv1alpha1.ClusterWideScope)
+	}
 }

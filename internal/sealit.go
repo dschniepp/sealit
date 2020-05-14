@@ -90,6 +90,41 @@ func New(sealitconfig string, kubeconfig string, fetchCert bool) (*Sealit, error
 	}, nil
 }
 
+func (s *Sealit) Reseal() (err error) {
+	return s.applyToEveryMatchingFile(func(srs *SealingRuleSet, f os.FileInfo) (err error) {
+		data, err := ioutil.ReadFile(f.Name())
+		if err != nil {
+			return err
+		}
+
+		log.Printf("[DEBUG] Load values file %s", f.Name())
+		vf, err := NewValueFile(data)
+		if err != nil {
+			return err
+		}
+
+		log.Print("[DEBUG] Load sealer based on config and values file")
+		resealer, err := NewResealer(srs, vf.Metadata)
+		if err != nil {
+			return err
+		}
+
+		log.Print("[DEBUG] Apply resealing function")
+		err = vf.ApplyFuncToValues(resealer.Reseal)
+		if err != nil {
+			return err
+		}
+
+		log.Print("[DEBUG] Export resealed yaml.Node tree")
+		data, err = vf.Export()
+		if err != nil {
+			return err
+		}
+
+		return ioutil.WriteFile(f.Name(), data, 0644)
+	})
+}
+
 func (s *Sealit) Seal(force bool) (err error) {
 	return s.applyToEveryMatchingFile(func(srs *SealingRuleSet, f os.FileInfo) (err error) {
 		data, err := ioutil.ReadFile(f.Name())

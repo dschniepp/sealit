@@ -59,6 +59,19 @@ func main() {
 				},
 			},
 			{
+				Name:    "reseal",
+				Aliases: []string{"r"},
+				Usage:   "reseal all secrets with the newest public cert",
+				Action: func(c *cli.Context) (err error) {
+					sealit, err := internal.New(c.String("config"), c.String("kubeconfig"), true)
+					if err != nil {
+						return err
+					}
+
+					return sealit.Reseal()
+				},
+			},
+			{
 				Name:    "verify",
 				Aliases: []string{"v"},
 				Usage:   "verify if all secrets are encrypted",
