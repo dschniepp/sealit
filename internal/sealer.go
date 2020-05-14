@@ -93,7 +93,7 @@ func NewSealer(srs *SealingRuleSet, m *Metadata, fetchCert bool) (s *Sealer, err
 func NewResealer(srs *SealingRuleSet, m *Metadata) (s *Resealer, err error) {
 	log.Printf("[DEBUG] Create resealer based on sealing rules %v and metadata %v", srs, m)
 
-	pKeys, pKey, err := srs.Cert.Sources.Kubernetes.fetchAllCerts()
+	pKeys, pKey, err := srs.Cert.Sources.Kubernetes.fetchKeys()
 
 	if err != nil {
 		return nil, err
