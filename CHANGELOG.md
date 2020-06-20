@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2020-06-20
+### Added
+- `reseal` command
+
 ## [0.3.0] - 2020-05-13
 ### Added
 - `--fetch-cert` flag to `seal` and `verify` for enforcing a cert load
