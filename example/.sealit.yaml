@@ -6,4 +6,7 @@ sealingRules:
     cert:
         maxAge: 720h0m0s
         sources:
-            path: cert.pem
+            kubernetes:
+              context: docker-desktop
+              namespace: kube-system
+              name: sealit-sealed-secrets

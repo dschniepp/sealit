@@ -32,6 +32,15 @@ type Sealer struct {
 	metadata      *Metadata
 }
 
+type Resealer struct {
+	secretsRegexp *regexp.Regexp
+	publicKey     *rsa.PublicKey
+	privateKeys   map[string]*rsa.PrivateKey
+	label         []byte
+	newLabel      []byte
+	metadata      *Metadata
+}
+
 func NewSealer(srs *SealingRuleSet, m *Metadata, fetchCert bool) (s *Sealer, err error) {
 	log.Printf("[DEBUG] Create sealer based on sealing rules %v and metadata %v", srs, m)
 	if *m == (Metadata{}) {
@@ -74,9 +83,32 @@ func NewSealer(srs *SealingRuleSet, m *Metadata, fetchCert bool) (s *Sealer, err
 	}
 
 	return &Sealer{
-		secretsRegexp: srs.GetRegexForSecrets(),
+		secretsRegexp: srs.GetSecretsRegex(),
 		publicKey:     pKey,
 		label:         m.getLabel(),
+		metadata:      m,
+	}, nil
+}
+
+func NewResealer(srs *SealingRuleSet, m *Metadata) (s *Resealer, err error) {
+	log.Printf("[DEBUG] Create resealer based on sealing rules %v and metadata %v", srs, m)
+
+	if (srs.Cert.Sources.Kubernetes == KubernetesCertSource{}) {
+		return s, errors.New("resealing works only with Kubernetes cert source")
+	}
+
+	pKeys, pKey, err := srs.Cert.Sources.Kubernetes.fetchKeys()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Resealer{
+		secretsRegexp: srs.GetSecretsRegex(),
+		publicKey:     pKey,
+		privateKeys:   pKeys,
+		label:         m.getLabel(),
+		newLabel:      srs.getLabel(),
 		metadata:      m,
 	}, nil
 }
@@ -95,9 +127,43 @@ func (s *Sealer) valueNeedsToBeSealed(key *yaml.Node, value *yaml.Node) bool {
 	return false
 }
 
-func (s *Sealer) Verify(key *yaml.Node, value *yaml.Node) error {
-	if s.valueNeedsToBeSealed(key, value) {
-		return fmt.Errorf("key `%s` is not encrypted", key.Value)
+func (r *Resealer) Reseal(key *yaml.Node, value *yaml.Node) error {
+	if r.secretsRegexp.MatchString(key.Value) {
+		if strings.HasPrefix(value.Value, encodeIdentifier) {
+			secret := strings.TrimPrefix(value.Value, encodeIdentifier)
+			decodedSecret, err := base64.StdEncoding.DecodeString(secret)
+
+			if err != nil {
+				return err
+			}
+
+			plaintext, err := crypto.HybridDecrypt(rand.Reader, r.privateKeys, decodedSecret, r.label)
+
+			if err != nil {
+				return err
+			}
+
+			value.SetString(string(plaintext))
+
+			log.Printf("[DEBUG] Decrypted value of `%s`", key.Value)
+		}
+
+		ciphertext, err := crypto.HybridEncrypt(rand.Reader, r.publicKey, []byte(value.Value), r.newLabel)
+
+		if err != nil {
+			return err
+		}
+
+		if value.Value == "" {
+			log.Printf("[WARNING] Value of `%s` is an empty string", key.Value)
+		} else if value.Value != strings.TrimSpace(value.Value) {
+			log.Printf("[WARNING] Value of `%s` is padded with whitespace", key.Value)
+		}
+
+		encodedSecret := base64.StdEncoding.EncodeToString(ciphertext)
+		value.SetString(fmt.Sprintf("%s%s", encodeIdentifier, encodedSecret))
+		r.metadata.SealedAt = time.Now().Format(time.RFC3339)
+		log.Printf("[DEBUG] Encrypted value of `%s`", key.Value)
 	}
 
 	return nil
@@ -121,6 +187,14 @@ func (s *Sealer) Seal(key *yaml.Node, value *yaml.Node) error {
 		value.SetString(fmt.Sprintf("%s%s", encodeIdentifier, encodedSecret))
 		s.metadata.SealedAt = time.Now().Format(time.RFC3339)
 		log.Printf("[DEBUG] Encrypted value of `%s`", key.Value)
+	}
+
+	return nil
+}
+
+func (s *Sealer) Verify(key *yaml.Node, value *yaml.Node) error {
+	if s.valueNeedsToBeSealed(key, value) {
+		return fmt.Errorf("key `%s` is not encrypted", key.Value)
 	}
 
 	return nil

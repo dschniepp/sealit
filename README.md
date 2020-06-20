@@ -26,6 +26,10 @@ In the [`example`](example) folder you can find a working solution and structure
 
 `sealit init` creates a sample `.sealit.yaml` configuration file.
 
+### `sealit reseal`
+
+`sealit reseal` reseals all files. This is only working with Kubernetes as cert source.
+
 ### `sealit seal`
 
 `sealit seal` seals all files according to the rules defined in the `.sealit.yaml`.
