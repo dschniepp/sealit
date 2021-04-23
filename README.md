@@ -7,7 +7,7 @@ __sealit__ is a CLI which provides an opinionated way of doing GitOps based on B
 ## Getting started
 
 1. Download the latest release from https://github.com/dschniepp/sealit/releases.
-2. Install sealed secrets via `helm` on your K8s cluster https://github.com/helm/charts/tree/master/stable/sealed-secrets
+2. Install sealed secrets via `helm` on your K8s cluster https://github.com/bitnami-labs/sealed-secrets/tree/main/helm/sealed-secrets
 3. Run `sealit init` next to your environment specific values.yaml of your helm chart
 4. Change the configuration file `.sealit.yaml` according to your needs
 5. Run `sealit seal` to encrypt all secrets. Review if your secrets are encrypted otherwise tweak your config file again.
